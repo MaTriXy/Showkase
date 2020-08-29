@@ -13,7 +13,7 @@ android {
     compileSdkVersion 29
 
     defaultConfig {
-        applicationId "com.vinaygaba.showcase"
+        applicationId "com.airbnb.android.showkasesample"
         minSdkVersion 21
         targetSdkVersion 29
         versionCode 1
@@ -40,7 +40,7 @@ android {
         compose true
     }
     composeOptions {
-        kotlinCompilerVersion "1.3.70-dev-withExperimentalGoogleExtensions-20200424"
+        kotlinCompilerVersion "${versions.kotlinCompilerVersion}"
         kotlinCompilerExtensionVersion "${versions.compose}"
 
     }
@@ -59,11 +59,12 @@ dependencies {
     // Kotlin
     implementation deps.kotlinStdLib
     
-    // Showcase dependencies
+    // Showkase dependencies
     // TODO(vinaygaba): Using debugImplementation was causing kapt related NonExistentClass errors. 
     //  Figure out a way to enable using debugImplementation
-    implementation project(':showcase')
-    kapt project(':showcase-processor')
+    implementation project(':showkase')
+    implementation project(':sample-submodule')
+    kapt project(':showkase-processor')
 
     // Support Libraries
     implementation deps.support.appCompat
@@ -83,12 +84,11 @@ dependencies {
 
     // Image loading
     implementation deps.imageLoading.picasso
-    implementation deps.imageLoading.glideCore
 
     // Testing
     testImplementation deps.test.junit
     androidTestImplementation deps.test.junitImplementation
 
-//    TODO(vinaygaba): Figure out product flavor stuff so that showcase can start as a separate app
+//    TODO(vinaygaba): Figure out product flavor stuff so that showkase can start as a separate app
 //    browserApi(project(':browser'))
 }
