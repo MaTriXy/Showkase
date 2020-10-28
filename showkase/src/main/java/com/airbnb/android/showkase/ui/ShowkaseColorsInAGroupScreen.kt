@@ -1,8 +1,9 @@
 package com.airbnb.android.showkase.ui
 
-import androidx.compose.foundation.Box
 import androidx.compose.foundation.Text
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -13,6 +14,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawShadow
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -35,6 +37,7 @@ internal fun ShowkaseColorsInAGroupScreen(
     val filteredList =
         getFilteredSearchList(groupColorsList, showkaseBrowserScreenMetadata)
     LazyColumnFor(
+        modifier = Modifier.testTag("ColorsInAGroupList"),
         items = filteredList,
         itemContent = { groupColorMetadata ->
             Card(
@@ -45,7 +48,7 @@ internal fun ShowkaseColorsInAGroupScreen(
                     modifier = Modifier.fillParentMaxWidth()
                         .padding(padding4x),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalGravity = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = groupColorMetadata.colorName,
@@ -56,12 +59,12 @@ internal fun ShowkaseColorsInAGroupScreen(
                             fontWeight = FontWeight.Bold
                         )
                     )
-                    Box(
+                    Column(
                         modifier = Modifier.padding(start = padding4x, end = padding4x)
                             .size(75.dp)
-                            .drawShadow(elevation = 5.dp),
-                        backgroundColor = groupColorMetadata.color,
-                    )
+                            .drawShadow(elevation = 5.dp)
+                            .background(color = groupColorMetadata.color)
+                    ){}
                 }
             }
         }

@@ -2,17 +2,16 @@ package com.airbnb.android.showkase.ui
 
 import android.content.Context
 import android.content.res.Configuration
-import androidx.compose.foundation.Box
 import androidx.compose.foundation.Icon
 import androidx.compose.foundation.ProvideTextStyle
 import androidx.compose.foundation.Text
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.preferredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumnFor
@@ -35,6 +34,7 @@ import androidx.compose.ui.platform.ConfigurationAmbient
 import androidx.compose.ui.platform.ContextAmbient
 import androidx.compose.ui.platform.DensityAmbient
 import androidx.compose.ui.platform.LayoutDirectionAmbient
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -60,7 +60,10 @@ internal fun ShowkaseComponentDetailScreen(
     val componentMetadata = componentMetadataList.find {
         it.componentName == showkaseBrowserScreenMetadata.value.currentComponent
     } ?: return
-    LazyColumnFor(items = listOf(componentMetadata), itemContent = { metadata ->
+    LazyColumnFor(
+        modifier = Modifier.testTag("ShowkaseComponentDetailList"),
+        items = listOf(componentMetadata), 
+        itemContent = { metadata ->
         ShowkaseComponentCardType.values().forEach { showkaseComponentCardType ->
             when (showkaseComponentCardType) {
                 ShowkaseComponentCardType.BASIC -> {
@@ -105,7 +108,7 @@ private fun DocumentationPanel(kDoc: String) {
             .fillMaxWidth()
             .clickable(onClick = onClick),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalGravity = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically
     ) {
         ProvideTextStyle(value = MaterialTheme.typography.button) {
             Text(
@@ -166,7 +169,7 @@ private fun RTLComponentCard(metadata: ShowkaseBrowserComponent) {
         val updatedModifier = generateComposableModifier(metadata)
         Card(modifier = Modifier.fillMaxWidth()) {
             Providers(LayoutDirectionAmbient provides LayoutDirection.Rtl) {
-                Box(modifier = updatedModifier) {
+                Column(modifier = updatedModifier) {
                     metadata.component()
                 }
             }

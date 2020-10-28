@@ -1,8 +1,9 @@
 package com.airbnb.android.showkase.ui
 
-import androidx.compose.foundation.Box
 import androidx.compose.foundation.Icon
 import androidx.compose.foundation.Text
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.IconButton
@@ -16,6 +17,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ContextAmbient
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -41,12 +43,13 @@ internal fun ShowkaseBrowserApp(
             ShowkaseAppBar(showkaseBrowserScreenMetadata)
         },
         bodyContent = {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                backgroundColor = SHOWKASE_COLOR_BACKGROUND
+            Column(
+                modifier = Modifier.fillMaxSize().background(color = SHOWKASE_COLOR_BACKGROUND),
             ) {
-                ShowkaseBodyContent(groupedComponentMap, groupedColorsMap, groupedTypographyMap,
-                    showkaseBrowserScreenMetadata)
+                ShowkaseBodyContent(
+                    groupedComponentMap, groupedColorsMap, groupedTypographyMap,
+                    showkaseBrowserScreenMetadata
+                )
             }
         }
     )
@@ -109,7 +112,7 @@ internal fun ShowkaseSearchField(metadata: MutableState<ShowkaseBrowserScreenMet
             fontSize = 18.sp,
             fontWeight = FontWeight.W500
         ),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.testTag("SearchTextField").fillMaxWidth(),
         leadingIcon = {
             Icon(asset = Icons.Filled.Search)
         },
@@ -120,13 +123,18 @@ internal fun ShowkaseSearchField(metadata: MutableState<ShowkaseBrowserScreenMet
 @Composable
 private fun ShowkaseAppBarActions(metadata: MutableState<ShowkaseBrowserScreenMetadata>) {
     when {
-        metadata.value.isSearchActive -> { }
-        metadata.value.currentScreen == ShowkaseCurrentScreen.COMPONENT_DETAIL ||  
-        metadata.value.currentScreen == ShowkaseCurrentScreen.SHOWKASE_CATEGORIES -> { }
+        metadata.value.isSearchActive -> {
+        }
+        metadata.value.currentScreen == ShowkaseCurrentScreen.COMPONENT_DETAIL ||
+                metadata.value.currentScreen == ShowkaseCurrentScreen.SHOWKASE_CATEGORIES -> {
+        }
         else -> {
-            IconButton(onClick = {
-                metadata.value = metadata.value.copy(isSearchActive = true)
-            }) {
+            IconButton(
+                modifier = Modifier.testTag("SearchIcon"),
+                onClick = {
+                    metadata.value = metadata.value.copy(isSearchActive = true)
+                }
+            ) {
                 Icon(asset = Icons.Filled.Search)
             }
         }
@@ -164,7 +172,7 @@ internal fun ShowkaseBodyContent(
         }
         ShowkaseCurrentScreen.COLOR_GROUPS -> {
             ShowkaseColorGroupsScreen(
-                groupedColorsMap, 
+                groupedColorsMap,
                 showkaseBrowserScreenMetadata
             )
         }
