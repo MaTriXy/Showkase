@@ -1,40 +1,59 @@
 package com.airbnb.android.showkase.ui
 
-import androidx.activity.ComponentActivity
-import androidx.compose.foundation.lazy.LazyColumnFor
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-import androidx.compose.ui.platform.LifecycleOwnerAmbient
+import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavHostController
 import com.airbnb.android.showkase.models.ShowkaseBrowserScreenMetadata
 import com.airbnb.android.showkase.models.ShowkaseCategory
 import com.airbnb.android.showkase.models.ShowkaseCurrentScreen
+import com.airbnb.android.showkase.models.clear
 import com.airbnb.android.showkase.models.clearActiveSearch
 import com.airbnb.android.showkase.models.update
 import java.util.Locale
 
 @Composable
 internal fun ShowkaseCategoriesScreen(
-    showkaseBrowserScreenMetadata: MutableState<ShowkaseBrowserScreenMetadata>
+    showkaseBrowserScreenMetadata: MutableState<ShowkaseBrowserScreenMetadata>,
+    navController: NavHostController,
+    categoryMetadataMap: Map<ShowkaseCategory, Int>
 ) {
-    val activity = (LifecycleOwnerAmbient.current as ComponentActivity)
-    
-    LazyColumnFor(items = ShowkaseCategory.values().toList()) { category ->
-        val defaultlLocale = Locale.getDefault()
-        SimpleTextCard(
-            text = category.name.toLowerCase(defaultlLocale).capitalize(defaultlLocale),
-            onClick = {
-                showkaseBrowserScreenMetadata.update {
-                    copy(
-                        currentScreen = when(category) {
-                            ShowkaseCategory.COMPONENTS -> ShowkaseCurrentScreen.COMPONENT_GROUPS
-                            ShowkaseCategory.COLORS -> ShowkaseCurrentScreen.COLOR_GROUPS
-                            ShowkaseCategory.TYPOGRAPHY -> ShowkaseCurrentScreen.TYPOGRAPHY_GROUPS
-                        },
-                        currentGroup = null,
-                        isSearchActive = false,
-                        searchQuery = null
-                    )
-                }
+    val activity = LocalContext.current as AppCompatActivity
+    LazyColumn {
+        items(
+            items = categoryMetadataMap.entries.toList(),
+            itemContent = { (category, categorySize) ->
+                val defaultLocale = Locale.getDefault()
+                val title = category.name
+                    .lowercase(defaultLocale)
+                    .replaceFirstChar { it.titlecase(defaultLocale) }
+
+                SimpleTextCard(
+                    text = "$title ($categorySize)",
+                    onClick = {
+                        showkaseBrowserScreenMetadata.update {
+                            copy(
+                                currentGroup = null,
+                                isSearchActive = false,
+                                searchQuery = null
+                            )
+                        }
+                        when (category) {
+                            ShowkaseCategory.COMPONENTS -> navController.navigate(
+                                ShowkaseCurrentScreen.COMPONENT_GROUPS
+                            )
+                            ShowkaseCategory.COLORS -> navController.navigate(
+                                ShowkaseCurrentScreen.COLOR_GROUPS
+                            )
+                            ShowkaseCategory.TYPOGRAPHY -> navController.navigate(
+                                ShowkaseCurrentScreen.TYPOGRAPHY_GROUPS
+                            )
+                        }
+                    }
+                )
             }
         )
     }
@@ -44,7 +63,7 @@ internal fun ShowkaseCategoriesScreen(
 }
 
 private fun goBackFromCategoriesScreen(
-    activity: ComponentActivity,
+    activity: AppCompatActivity,
     showkaseBrowserScreenMetadata: MutableState<ShowkaseBrowserScreenMetadata>
 ) {
     val isSearchActive = showkaseBrowserScreenMetadata.value.isSearchActive
@@ -55,19 +74,20 @@ private fun goBackFromCategoriesScreen(
 }
 
 internal fun goBackToCategoriesScreen(
-    showkaseBrowserScreenMetadata: MutableState<ShowkaseBrowserScreenMetadata>
+    showkaseBrowserScreenMetadata: MutableState<ShowkaseBrowserScreenMetadata>,
+    navController: NavHostController,
+    onBackPressOnRoot: () -> Unit
 ) {
-    val isSearchActive = showkaseBrowserScreenMetadata.value.isSearchActive
     when {
-        isSearchActive -> showkaseBrowserScreenMetadata.clearActiveSearch()
-        else -> showkaseBrowserScreenMetadata.update {
-            copy(
-                currentScreen = ShowkaseCurrentScreen.SHOWKASE_CATEGORIES,
-                currentComponent = null,
-                isSearchActive = false,
-                searchQuery = null,
-                currentGroup = null
-            )
+        showkaseBrowserScreenMetadata.value.isSearchActive -> {
+            showkaseBrowserScreenMetadata.clearActiveSearch()
+        }
+        navController.currentDestination?.id == navController.graph.startDestinationId -> {
+            onBackPressOnRoot()
+        }
+        else -> {
+            showkaseBrowserScreenMetadata.clear()
+            navController.navigate(ShowkaseCurrentScreen.SHOWKASE_CATEGORIES)
         }
     }
 }

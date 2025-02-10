@@ -1,53 +1,42 @@
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    // Maven artifact publish
-    dependencies {
-        classpath 'com.vanniktech:gradle-maven-publish-plugin:0.11.1'
-    }
-}
-
 plugins {
     id 'java-library'
     id 'kotlin'
 }
-apply plugin: 'kotlin-kapt'
-apply plugin: "com.vanniktech.maven.publish"
-
-kapt {
-    correctErrorTypes = true
-    generateStubs = true
-}
-
-sourceSets {
-    main {
-        java {
-            srcDir "${buildDir.absolutePath}/tmp/kapt/main/kotlinGenerated/"
-        }
-    }
-}
+apply from: "$rootDir/publishing.gradle"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 compileKotlin {
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
+    }
+}
+
+// Need to apply to all tasks like this so test tasks also get these compiler args
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile) {
+    kotlinOptions {
+        freeCompilerArgs += [
+                '-Xopt-in=kotlin.RequiresOptIn',
+                "-Xopt-in=kotlin.contracts.ExperimentalContracts",
+                "-Xopt-in=androidx.room.compiler.processing.ExperimentalProcessingApi",
+                "-Xopt-in=com.squareup.kotlinpoet.javapoet.KotlinPoetJavaPoetPreview",
+        ]
     }
 }
 
 dependencies {
-    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation project(':showkase-annotation')
 
-    compileOnly project(':showkase-annotation')
-
-    implementation deps.autoService
-    implementation deps.kotlinStdLib
     implementation deps.kotlinPoet
+    implementation deps.kotlinJavaPoetInterop
     implementation deps.kotlinXMetadata
-    
-    kapt deps.autoService
+    implementation deps.ksp
+    implementation deps.xprocessing
+
+    testImplementation deps.test.strikt
+    testImplementation deps.test.junit
+    testImplementation deps.xprocessingTesting
 }

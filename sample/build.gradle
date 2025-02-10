@@ -1,25 +1,34 @@
 plugins {
     id 'com.android.application'
     id 'kotlin-android'
-    id 'kotlin-android-extensions'
+    id 'shot'
 }
-apply plugin: 'kotlin-kapt'
 
-kapt {
-    correctErrorTypes = true
+if (project.hasProperty('useKsp')) {
+    apply plugin: 'com.google.devtools.ksp'
+    kotlin {
+        sourceSets.configureEach {
+            kotlin.srcDirs += "build/generated/ksp/${it.name}/kotlin"
+        }
+    }
+} else {
+    apply plugin: 'kotlin-kapt'
+    kapt {
+        correctErrorTypes = true
+    }
 }
 
 android {
-    compileSdkVersion 29
+    namespace "com.airbnb.android.showkasesample"
 
     defaultConfig {
         applicationId "com.airbnb.android.showkasesample"
         minSdkVersion 21
-        targetSdkVersion 29
+        compileSdk 34
+        targetSdkVersion 33
         versionCode 1
         versionName "1.0"
-
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner "com.karumi.shot.ShotTestRunner"
     }
 
     buildTypes {
@@ -28,43 +37,59 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
-    
+
     compileOptions {
-        sourceCompatibility = 1.8
-        targetCompatibility = 1.8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
     buildFeatures {
         compose true
     }
     composeOptions {
         kotlinCompilerVersion "${versions.kotlinCompilerVersion}"
-        kotlinCompilerExtensionVersion "${versions.compose}"
+        kotlinCompilerExtensionVersion "${versions.composeCompiler}"
 
     }
-
-//    Seeing two apps being installed simultaneously so commenting this until then
-//    TODO(vinaygaba): Figure out product flavor stuff
-//    flavorDimensions "browser"
-//    productFlavors {
-//        browser {
-//        }
-//    }
+    // Added to avoid this error -
+    // Execution failed for task ':app:mergeDebugAndroidTestJavaResource'.
+    // > A failure occurred while executing com.android.build.gradle.internal.tasks.MergeJavaResWorkAction
+    // > 2 files found with path 'META-INF/AL2.0' from inputs:
+    packagingOptions {
+        exclude 'META-INF/AL2.0'
+        exclude 'META-INF/LGPL2.1'
+        exclude 'META-INF/gradle/incremental.annotation.processors'
+    }
+}
+if (project.hasProperty("useKsp")) {
+    ksp {
+        arg("skipPrivatePreviews", "true")
+    }
+} else {
+    kapt {
+        arguments {
+            arg("skipPrivatePreviews", "true")
+        }
+    }
 }
 
+
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-    // Kotlin
-    implementation deps.kotlinStdLib
-    
     // Showkase dependencies
-    // TODO(vinaygaba): Using debugImplementation was causing kapt related NonExistentClass errors. 
+    // TODO(vinaygaba): Using debugImplementation was causing kapt related NonExistentClass errors.
     //  Figure out a way to enable using debugImplementation
     implementation project(':showkase')
     implementation project(':sample-submodule')
-    kapt project(':showkase-processor')
+    implementation project(':sample-submodule-2')
+    if (project.hasProperty('useKsp')) {
+        ksp project(':showkase-processor')
+        kspAndroidTest project(':showkase-processor')
+    } else {
+        kapt project(':showkase-processor')
+        kaptAndroidTest project(':showkase-processor')
+    }
 
     // Support Libraries
     implementation deps.support.appCompat
@@ -72,7 +97,9 @@ dependencies {
     implementation deps.support.lifecycleExtensions
 
     // Compose
+    implementation deps.compose.activityCompose
     implementation deps.compose.composeRuntime
+    implementation deps.compose.constraintLayout
     implementation deps.compose.core
     implementation deps.compose.foundation
     implementation deps.compose.tooling
@@ -88,7 +115,5 @@ dependencies {
     // Testing
     testImplementation deps.test.junit
     androidTestImplementation deps.test.junitImplementation
-
-//    TODO(vinaygaba): Figure out product flavor stuff so that showkase can start as a separate app
-//    browserApi(project(':browser'))
+    androidTestImplementation project(':showkase-screenshot-testing-shot')
 }

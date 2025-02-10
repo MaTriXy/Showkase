@@ -8,6 +8,13 @@ interface ShowkaseProvider {
     fun getShowkaseComponents(): List<ShowkaseBrowserComponent>
 
     fun getShowkaseColors(): List<ShowkaseBrowserColor>
-    
+
     fun getShowkaseTypography(): List<ShowkaseBrowserTypography>
+
+    fun metadata(): ShowkaseElementsMetadata {
+        val componentList = getShowkaseComponents()
+        val colorList = getShowkaseColors()
+        val typographyList = getShowkaseTypography()
+        return ShowkaseElementsMetadata(componentList, colorList, typographyList)
+    }
 }

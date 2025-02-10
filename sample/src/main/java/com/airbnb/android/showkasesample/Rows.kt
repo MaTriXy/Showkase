@@ -1,15 +1,16 @@
 package com.airbnb.android.showkasesample
 
-import androidx.compose.foundation.Text
+import androidx.activity.compose.BackHandler
+import androidx.compose.material.Text
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ConstraintLayout
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.preferredHeight
-import androidx.compose.foundation.layout.preferredWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Card
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ListItem
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
@@ -22,19 +23,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.ui.tooling.preview.Preview
-import androidx.ui.tooling.preview.datasource.LoremIpsum
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.datasource.LoremIpsum
+import androidx.constraintlayout.compose.ConstraintLayout
 import com.airbnb.android.showkase.annotation.ShowkaseComposable
 import com.airbnb.android.showkase.ui.padding1x
 import com.airbnb.android.showkase.ui.padding2x
 import com.airbnb.android.showkase.ui.padding4x
+import java.util.Locale
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun SimpleRow(title: String, subtitle: String) {
     ShowkaseTheme {
         Card(
             shape = RoundedCornerShape(padding1x),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
                 .padding(padding2x)
         ) {
             ListItem(text = {
@@ -55,8 +60,9 @@ fun SimpleRow(title: String, subtitle: String) {
                 )
             }, icon = {
                 Column(
-                    modifier = Modifier.preferredWidth(60.dp)
-                        .preferredHeight(60.dp)
+                    modifier = Modifier
+                        .width(60.dp)
+                        .height(60.dp)
                         .background(color = Color.Gray)
                 ) {}
             })
@@ -68,7 +74,8 @@ fun SimpleRow(title: String, subtitle: String) {
 fun TitleSubtitleThumbnailRow() {
     ShowkaseTheme {
         Card(
-            modifier = Modifier.preferredHeight(120.dp)
+            modifier = Modifier
+                .height(120.dp)
                 .fillMaxWidth()
                 .padding(padding2x),
             shape = RoundedCornerShape(padding1x)
@@ -92,8 +99,9 @@ fun TitleSubtitleThumbnailRow() {
                     start.linkTo(image.end, margin = padding4x)
                 })
 
-                Column(modifier = Modifier.preferredHeight(72.dp)
-                    .preferredWidth(72.dp)
+                Column(modifier = Modifier
+                    .height(72.dp)
+                    .width(72.dp)
                     .background(color = Color.Gray)
                     .constrainAs(image) {
                         centerVerticallyTo(parent)
@@ -109,7 +117,8 @@ fun TitleSubtitleThumbnailRow() {
 fun BottomLabelRow(title: String, subtitle: String, label: String) {
     ShowkaseTheme {
         Column(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
                 .background(color = MaterialTheme.colors.surface)
                 .padding(padding4x)
         ) {
@@ -134,11 +143,11 @@ fun BottomLabelRow(title: String, subtitle: String, label: String) {
                 )
             )
             Surface(
-                shape = RoundedCornerShape(padding1x/2),
+                shape = RoundedCornerShape(padding1x / 2),
                 color = MaterialTheme.colors.primary
             ) {
                 Text(
-                    text = label.toUpperCase(),
+                    text = label.uppercase(Locale.getDefault()),
                     modifier = Modifier.padding(padding2x),
                     style = TextStyle(
                         fontSize = 10.sp,
@@ -155,11 +164,15 @@ fun BottomLabelRow(title: String, subtitle: String, label: String) {
 fun ProductCardRow(imageUrl: String, title: String, subtitle: String) {
     ShowkaseTheme {
         Column(
-            modifier = Modifier.fillMaxWidth().background(color = MaterialTheme.colors.surface)
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(color = MaterialTheme.colors.surface)
         ) {
             NetworkImage(
                 imageUrl = imageUrl,
-                modifier = Modifier.fillMaxWidth().preferredHeight(200.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
             )
             Text(
                 text = title,
@@ -181,7 +194,6 @@ fun ProductCardRow(imageUrl: String, title: String, subtitle: String) {
                     color = MaterialTheme.colors.onSurface
                 )
             )
-
         }
     }
 }
@@ -198,7 +210,7 @@ fun BottomLabelRowPreview() {
 }
 
 /**
- * Use this card when you want to render a product with a hero image at the top. 
+ * Use this card when you want to render a product with a hero image at the top.
  *
  * Example usage:
  *
@@ -237,4 +249,14 @@ fun TitleSubtitleThumbnailRowPreview() {
     Column {
         TitleSubtitleThumbnailRow()
     }
+}
+
+@ShowkaseComposable@ShowkaseComposable("Title Subtitle with Thumbnail and Back Handler", "Rows")
+@Preview
+@Composable
+fun TitleSubtitleThumbnailRowWithBackHandlingPreview() {
+    Column {
+        TitleSubtitleThumbnailRow()
+    }
+    BackHandler(onBack = {})
 }

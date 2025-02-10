@@ -1,25 +1,26 @@
 package com.airbnb.android.showkasesample
 
-import androidx.compose.foundation.Text
+import androidx.compose.material.Text
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Card
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.ContextAmbient
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.sp
-import androidx.ui.tooling.preview.Preview
-import androidx.ui.tooling.preview.PreviewParameter
-import androidx.ui.tooling.preview.PreviewParameterProvider
 import com.airbnb.android.showkase.annotation.ShowkaseComposable
 import com.airbnb.android.showkase.ui.padding4x
+import com.airbnb.android.submodule.showkasesample.LocalePreview
 
 /**
- * This component shows some static text in cursive text style. 
- * 
+ * This component shows some static text in cursive text style.
+ *
  * Example usage:
  *
  * ```
@@ -33,14 +34,19 @@ import com.airbnb.android.showkase.ui.padding4x
 @Preview
 @Composable
 fun CursiveTextComponent() {
-    val context = ContextAmbient.current
+    val context = LocalContext.current
     val string = context.getString(R.string.app_name)
 
     ShowkaseTheme {
         Card {
-            Text(text = string, modifier = Modifier.fillMaxWidth().padding(padding4x),
-                style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Cursive)
+            Text(
+                text = string, modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(padding4x),
+                style = TextStyle(
+                    fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Cursive
+                )
             )
         }
     }
@@ -50,14 +56,19 @@ fun CursiveTextComponent() {
 @Preview
 @Composable
 fun SerifTextComponentPreview() {
-    val context = ContextAmbient.current
+    val context = LocalContext.current
     val string = context.getString(R.string.app_name)
 
     ShowkaseTheme {
         Card {
-            Text(text = string, modifier = Modifier.fillMaxWidth().padding(padding4x),
-                style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Serif)
+            Text(
+                text = string, modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(padding4x),
+                style = TextStyle(
+                    fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Serif
+                )
             )
         }
     }
@@ -67,14 +78,19 @@ fun SerifTextComponentPreview() {
 @Preview
 @Composable
 fun SansSerifTextComponentPreview() {
-    val context = ContextAmbient.current
+    val context = LocalContext.current
     val string = context.getString(R.string.app_name)
 
     ShowkaseTheme {
         Card {
-            Text(text = string, modifier = Modifier.fillMaxWidth().padding(padding4x),
-                style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.SansSerif)
+            Text(
+                text = string, modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(padding4x),
+                style = TextStyle(
+                    fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.SansSerif
+                )
             )
         }
     }
@@ -83,13 +99,16 @@ fun SansSerifTextComponentPreview() {
 @ShowkaseComposable(name = "H4 Text Row", group = "Text")
 @Composable
 fun H4TextRowComponentPreview() {
-    val context = ContextAmbient.current
+    val context = LocalContext.current
     val string = context.getString(R.string.app_name)
 
     ShowkaseTheme {
         Card {
-            Text(text = string, 
-                modifier = Modifier.fillMaxWidth().padding(padding4x),
+            Text(
+                text = string,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(padding4x),
                 style = Material.h4
             )
         }
@@ -110,7 +129,6 @@ class ParameterProvider : PreviewParameterProvider<Person> {
 
     override val count: Int
         get() = super.count
-
 }
 
 @Composable
@@ -119,7 +137,9 @@ fun H6TextRowComponent(text: String) {
         Card {
             Text(
                 text = text,
-                modifier = Modifier.fillMaxWidth().padding(padding4x),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(padding4x),
                 style = Material.h6
             )
         }
@@ -129,7 +149,25 @@ fun H6TextRowComponent(text: String) {
 @Preview(name = "H6 Text Row", group = "Text")
 @Composable
 fun H6TextRowComponentPreview(
+    age: String = "15",
     @PreviewParameter(provider = ParameterProvider::class) person: Person
 ) {
     H6TextRowComponent(person.name)
+}
+
+// This is here for testing, generating this code into function names would
+// fail dex generation
+@Preview(name = "H6 Text Row & special chars !@#$%^&*()_+", group = "Text")
+@Composable
+fun H6TextRowComponentPreviewWithSpecialCharInPreview(
+    age: String = "15",
+    @PreviewParameter(provider = ParameterProvider::class) person: Person
+) {
+    H6TextRowComponent(person.name)
+}
+
+@LocalePreview
+@Composable
+fun EnglishText() {
+    Text(text = "Some english text")
 }

@@ -1,11 +1,8 @@
-import org.gradle.internal.jvm.Jvm
-
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-kapt'
 
 android {
-    compileSdkVersion 29
+    namespace "com.airbnb.android.showkase_processor_testing"
     // Added to avoid this error -
     // Execution failed for task ':showkase-processor-testing:mergeDebugAndroidTestJavaResource'.
     // > A failure occurred while executing com.android.build.gradle.internal.tasks.Workers$ActionFacade
@@ -13,10 +10,17 @@ android {
     packagingOptions {
         exclude 'META-INF/gradle/incremental.annotation.processors'
         exclude("META-INF/*.kotlin_module")
+        // Added to avoid this error -
+        // Execution failed for task ':app:mergeDebugAndroidTestJavaResource'.
+        // > A failure occurred while executing com.android.build.gradle.internal.tasks.MergeJavaResWorkAction
+        // > 2 files found with path 'META-INF/AL2.0' from inputs:
+        exclude 'META-INF/AL2.0'
+        exclude 'META-INF/LGPL2.1'
     }
     defaultConfig {
-        minSdkVersion 21
-        targetSdkVersion 29
+        minSdkVersion 26
+        compileSdk 34
+        targetSdkVersion 33
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         // The following argument makes the Android Test Orchestrator run its
         // "pm clear" command after each test invocation. This command ensures
@@ -24,68 +28,81 @@ android {
         testInstrumentationRunnerArguments clearPackageData: 'true'
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
     buildFeatures {
         compose true
     }
     composeOptions {
         kotlinCompilerVersion "${versions.kotlinCompilerVersion}"
-        kotlinCompilerExtensionVersion "${versions.compose}"
+        kotlinCompilerExtensionVersion "${versions.composeCompiler}"
+    }
+    configurations {
+        all {
+            // work around this error:
+            // Duplicate class org.intellij.lang.annotations.Identifier found in modules annotations-12.0 (com.intellij:annotations:12.0) and annotations-13.0 (org.jetbrains:annotations:13.0)
+            exclude group: "com.intellij", module: "annotations"
+        }
     }
 }
 
 dependencies {
-    implementation fileTree(include: ['*.jar'], dir: 'libs')
-
-    // Kotlin
-    implementation deps.kotlinStdLib
+    // Allows this module to access the annotation processor related classes. Otherwise those are
+    // only available in java library modules. Inspiration -
+    // https://github.com/airbnb/epoxy/blob/master/epoxy-processortest/build.gradle
+    testImplementation files('libs/rt.jar')
 
     // Support Libraries
     implementation deps.support.appCompat
 
     // Showkase
     implementation project(':showkase')
-    kapt project(':showkase-processor')
     implementation project(':showkase-processor')
+    implementation project(':showkase-screenshot-testing')
+
+    // KSP
+    implementation deps.ksp
 
     // Compose
+    implementation deps.compose.activityCompose
     implementation deps.compose.composeRuntime
     implementation deps.compose.core
     implementation deps.compose.foundation
     implementation deps.compose.tooling
-    androidTestImplementation deps.compose.uiTest
+
+    // Material
+    implementation deps.material.material
+    implementation deps.material.mdcComposeThemeAdapter
 
     // Testing
     testImplementation deps.test.assertJ
     testImplementation deps.test.googleTruth
     testImplementation deps.test.junit
-    androidTestImplementation deps.test.junitImplementation
-    androidTestImplementation deps.test.androidXTestCore
-    androidTestImplementation deps.test.androidXTestRules
-    androidTestImplementation deps.test.androidxTestRunner
-    // Allows this module to access the annotation processor related classes. Otherwise those are 
-    // only available in java library modules. Inspiration - 
-    // https://github.com/airbnb/epoxy/blob/master/epoxy-processortest/build.gradle
-    testImplementation files(getRuntimeJar())
-    testImplementation files(Jvm.current().getToolsJar())
     testImplementation deps.kotlinCompileTesting
+    testImplementation deps.kotlinCompileTestingKsp
+    testImplementation project(':showkase-screenshot-testing-paparazzi')
+    testImplementation deps.test.paparazzi
 }
 
-static def getRuntimeJar() {
-    try {
-        final File javaBase = new File(System.getProperty("java.home")).getCanonicalFile()
-        File runtimeJar = new File(javaBase, "lib/rt.jar")
-        if (runtimeJar.exists()) {
-            return runtimeJar
-        }
-        runtimeJar = new File(javaBase, "jre/lib/rt.jar")
-        return runtimeJar.exists() ? runtimeJar : null
-    } catch (IOException e) {
-        throw new RuntimeException(e)
+// Needed for Java17 otherwise these tests failed to run locally.
+// More info - https://youtrack.jetbrains.com/issue/KT-45545/Kapt-is-not-compatible-with-JDK-16
+tasks.withType(Test) {
+    if (JavaVersion.current() >= JavaVersion.VERSION_16) {
+        jvmArgs(
+                "--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+                "--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
+                "--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED",
+                "--add-opens=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
+                "--add-opens=jdk.compiler/com.sun.tools.javac.jvm=ALL-UNNAMED",
+                "--add-opens=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+                "--add-opens=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",
+                "--add-opens=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED",
+                "--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+                "--add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+        )
     }
 }

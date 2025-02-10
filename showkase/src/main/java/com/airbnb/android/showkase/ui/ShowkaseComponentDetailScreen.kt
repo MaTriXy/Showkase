@@ -2,9 +2,6 @@ package com.airbnb.android.showkase.ui
 
 import android.content.Context
 import android.content.res.Configuration
-import androidx.compose.foundation.Icon
-import androidx.compose.foundation.ProvideTextStyle
-import androidx.compose.foundation.Text
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,27 +10,33 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumnFor
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Card
+import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.ProvideTextStyle
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.Providers
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.ConfigurationAmbient
-import androidx.compose.ui.platform.ContextAmbient
-import androidx.compose.ui.platform.DensityAmbient
-import androidx.compose.ui.platform.LayoutDirectionAmbient
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -43,52 +46,58 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import com.airbnb.android.showkase.R
 import com.airbnb.android.showkase.models.ShowkaseBrowserComponent
 import com.airbnb.android.showkase.models.ShowkaseBrowserScreenMetadata
 import com.airbnb.android.showkase.models.ShowkaseCurrentScreen
 import com.airbnb.android.showkase.models.update
-import java.util.Locale
 
 @Composable
 internal fun ShowkaseComponentDetailScreen(
     groupedComponentMap: Map<String, List<ShowkaseBrowserComponent>>,
-    showkaseBrowserScreenMetadata: MutableState<ShowkaseBrowserScreenMetadata>
+    showkaseBrowserScreenMetadata: MutableState<ShowkaseBrowserScreenMetadata>,
+    navController: NavHostController
 ) {
     val componentMetadataList =
         groupedComponentMap[showkaseBrowserScreenMetadata.value.currentGroup] ?: return
     val componentMetadata = componentMetadataList.find {
-        it.componentName == showkaseBrowserScreenMetadata.value.currentComponent
+        it.componentKey == showkaseBrowserScreenMetadata.value.currentComponentKey
     } ?: return
-    LazyColumnFor(
-        modifier = Modifier.testTag("ShowkaseComponentDetailList"),
-        items = listOf(componentMetadata), 
-        itemContent = { metadata ->
-        ShowkaseComponentCardType.values().forEach { showkaseComponentCardType ->
-            when (showkaseComponentCardType) {
-                ShowkaseComponentCardType.BASIC -> {
-                    if (!metadata.componentKDoc.isBlank()) {
-                        DocumentationPanel(metadata.componentKDoc)
+    LazyColumn(
+        modifier = Modifier.testTag("ShowkaseComponentDetailList")
+    ) {
+        items(
+            items = listOf(componentMetadata),
+            itemContent = { metadata ->
+                ShowkaseComponentCardType.values().forEach { showkaseComponentCardType ->
+                    when (showkaseComponentCardType) {
+                        ShowkaseComponentCardType.BASIC -> {
+                            if (metadata.componentKDoc.isNotBlank()) {
+                                DocumentationPanel(metadata.componentKDoc)
+                            }
+                            BasicComponentCard(metadata)
+                        }
+                        ShowkaseComponentCardType.FONT_SCALE -> FontScaledComponentCard(metadata)
+                        ShowkaseComponentCardType.DISPLAY_SCALED -> DisplayScaledComponentCard(
+                            metadata
+                        )
+                        ShowkaseComponentCardType.RTL -> RTLComponentCard(metadata)
+                        ShowkaseComponentCardType.DARK_MODE -> DarkModeComponentCard(metadata)
                     }
-                    BasicComponentCard(metadata)
                 }
-                ShowkaseComponentCardType.FONT_SCALE -> FontScaledComponentCard(metadata)
-                ShowkaseComponentCardType.DISPLAY_SCALED -> DisplayScaledComponentCard(metadata)
-                ShowkaseComponentCardType.RTL -> RTLComponentCard(metadata)
-                ShowkaseComponentCardType.DARK_MODE -> DarkModeComponentCard(metadata)
             }
-        }
-    })
-    BackButtonHandler {
-        back(showkaseBrowserScreenMetadata)
+        )
     }
-    
+    BackButtonHandler {
+        back(showkaseBrowserScreenMetadata, navController)
+    }
 }
 
 @Composable
 private fun DocumentationPanel(kDoc: String) {
     var showDocumentation by remember { mutableStateOf(false) }
-    val context = ContextAmbient.current
+    val context = LocalContext.current
     val (buttonText, icon) = getCollabsableTextAndIcon(context, showDocumentation)
     val onClick = { showDocumentation = !showDocumentation }
     if (showDocumentation) {
@@ -116,7 +125,7 @@ private fun DocumentationPanel(kDoc: String) {
                 color = MaterialTheme.colors.primary
             )
         }
-        Icon(asset = icon)
+        Icon(imageVector = icon, contentDescription = buttonText)
     }
 }
 
@@ -136,42 +145,34 @@ private fun BasicComponentCard(metadata: ShowkaseBrowserComponent) {
 
 @Composable
 private fun FontScaledComponentCard(metadata: ShowkaseBrowserComponent) {
-    val density = DensityAmbient.current
+    val density = LocalDensity.current
     val customDensity = Density(fontScale = density.fontScale * 2, density = density.density)
 
     ComponentCardTitle("${metadata.componentName} [Font Scaled x 2]")
-    Providers(DensityAmbient provides customDensity) {
+    CompositionLocalProvider(LocalDensity provides customDensity) {
         ComponentCard(metadata)
     }
 }
 
 @Composable
 private fun DisplayScaledComponentCard(metadata: ShowkaseBrowserComponent) {
-    val density = DensityAmbient.current
+    val density = LocalDensity.current
     val customDensity = Density(density = density.density * 2f)
 
     ComponentCardTitle("${metadata.componentName} [Display Scaled x 2]")
-    Providers(DensityAmbient provides customDensity) {
+    CompositionLocalProvider(LocalDensity provides customDensity) {
         ComponentCard(metadata)
     }
 }
 
 @Composable
 private fun RTLComponentCard(metadata: ShowkaseBrowserComponent) {
-    val customConfiguration = Configuration(ConfigurationAmbient.current).apply {
-        val locale = Locale("ar")
-        setLocale(locale)
-        setLayoutDirection(locale)
-    }
-    val customContext = ContextAmbient.current.createConfigurationContext(customConfiguration)
     ComponentCardTitle("${metadata.componentName} [RTL]")
-    Providers(ContextAmbient provides customContext) {
-        val updatedModifier = generateComposableModifier(metadata)
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Providers(LayoutDirectionAmbient provides LayoutDirection.Rtl) {
-                Column(modifier = updatedModifier) {
-                    metadata.component()
-                }
+    val updatedModifier = Modifier.generateComposableModifier(metadata)
+    Card(modifier = Modifier.fillMaxWidth()) {
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+            Column(modifier = updatedModifier) {
+                metadata.component()
             }
         }
     }
@@ -179,21 +180,23 @@ private fun RTLComponentCard(metadata: ShowkaseBrowserComponent) {
 
 @Composable
 private fun DarkModeComponentCard(metadata: ShowkaseBrowserComponent) {
-    val customConfiguration = Configuration(ConfigurationAmbient.current).apply {
+    val darkModeConfiguration = Configuration(LocalConfiguration.current).apply {
         uiMode = Configuration.UI_MODE_NIGHT_YES
     }
-
     ComponentCardTitle("${metadata.componentName} [Dark Mode]")
-    Providers(ConfigurationAmbient provides customConfiguration) {
-        ComponentCard(metadata)
+    CompositionLocalProvider(LocalConfiguration provides darkModeConfiguration) {
+        ComponentCard(
+            metadata = metadata,
+            darkMode = true
+        )
     }
 }
 
-internal fun generateComposableModifier(metadata: ShowkaseBrowserComponent): Modifier {
-    val baseModifier = Modifier.padding(padding4x)
-    return when {
+internal fun Modifier.generateComposableModifier(metadata: ShowkaseBrowserComponent) = composed {
+    val baseModifier = padding(padding4x).sizeIn(maxHeight = Dp(LocalConfiguration.current.screenHeightDp.toFloat()))
+    when {
         metadata.heightDp != null && metadata.widthDp != null -> baseModifier.size(
-            width = metadata.widthDp.dp, 
+            width = metadata.widthDp.dp,
             height = metadata.heightDp.dp
         )
         metadata.heightDp != null -> baseModifier.height(Dp(metadata.heightDp.toFloat()))
@@ -202,13 +205,16 @@ internal fun generateComposableModifier(metadata: ShowkaseBrowserComponent): Mod
     }
 }
 
-private fun back(showkaseBrowserScreenMetadata: MutableState<ShowkaseBrowserScreenMetadata>) {
+private fun back(
+    showkaseBrowserScreenMetadata: MutableState<ShowkaseBrowserScreenMetadata>,
+    navController: NavHostController
+) {
     showkaseBrowserScreenMetadata.update {
         copy(
-            currentScreen = ShowkaseCurrentScreen.COMPONENTS_IN_A_GROUP,
-            currentComponent = null,
+            currentComponentStyleName = null,
             isSearchActive = false,
             searchQuery = null
         )
     }
+    navController.navigate(ShowkaseCurrentScreen.COMPONENT_STYLES)
 }

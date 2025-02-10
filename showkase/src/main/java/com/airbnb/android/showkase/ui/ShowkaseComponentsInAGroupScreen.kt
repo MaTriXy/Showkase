@@ -1,65 +1,72 @@
 package com.airbnb.android.showkase.ui
 
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
-import androidx.compose.foundation.lazy.LazyColumnFor
 import androidx.compose.runtime.MutableState
+import androidx.navigation.NavHostController
 import com.airbnb.android.showkase.models.ShowkaseBrowserComponent
 import com.airbnb.android.showkase.models.ShowkaseBrowserScreenMetadata
 import com.airbnb.android.showkase.models.ShowkaseCurrentScreen
+import com.airbnb.android.showkase.models.clear
 import com.airbnb.android.showkase.models.clearActiveSearch
 import com.airbnb.android.showkase.models.update
 
 @Composable
 internal fun ShowkaseComponentsInAGroupScreen(
     groupedComponentMap: Map<String, List<ShowkaseBrowserComponent>>,
-    showkaseBrowserScreenMetadata: MutableState<ShowkaseBrowserScreenMetadata>
+    showkaseBrowserScreenMetadata: MutableState<ShowkaseBrowserScreenMetadata>,
+    navController: NavHostController
 ) {
-    val groupComponentsList =
+    val groupByComponentName =
         groupedComponentMap[showkaseBrowserScreenMetadata.value.currentGroup]
-            ?.sortedBy { it.componentName } ?: return
+            ?.groupBy { it.componentName } ?: return
+    // Use the default style as the preview if its available or take the first style for the component
+    val componentList = groupByComponentName.values.map {
+        it.firstOrNull { it.isDefaultStyle } ?: it.first()
+    }
     val filteredList =
-        getFilteredSearchList(groupComponentsList, showkaseBrowserScreenMetadata)
-    LazyColumnFor(
-        items = filteredList,
-        itemContent = { groupComponent ->
-            ComponentCardTitle(groupComponent.componentName)
-            ComponentCard(
-                metadata = groupComponent,
-                onClick = {
-                    showkaseBrowserScreenMetadata.update {
-                        copy(
-                            currentScreen = ShowkaseCurrentScreen.COMPONENT_DETAIL,
-                            currentComponent = groupComponent.componentName,
-                            isSearchActive = false
-                        )
+        getFilteredSearchList(componentList, showkaseBrowserScreenMetadata)
+    LazyColumn {
+        items(
+            items = filteredList,
+            itemContent = { groupComponent ->
+                ComponentCardTitle(groupComponent.componentName)
+                ComponentCard(
+                    metadata = groupComponent,
+                    onClick = {
+                        showkaseBrowserScreenMetadata.update {
+                            copy(
+                                currentComponentKey = groupComponent.componentKey,
+                                currentComponentName = groupComponent.componentName,
+                                currentComponentStyleName = groupComponent.styleName,
+                                isSearchActive = false
+                            )
+                        }
+                        navController.navigate(ShowkaseCurrentScreen.COMPONENT_STYLES)
                     }
-                }
-            )
-        }
-    )
+                )
+            }
+        )
+    }
     BackButtonHandler {
-        goBackFromComponentsInAGroupScreen(showkaseBrowserScreenMetadata)
+        goBackFromComponentsInAGroupScreen(showkaseBrowserScreenMetadata, navController)
     }
 }
 
 private fun goBackFromComponentsInAGroupScreen(
-    showkaseBrowserScreenMetadata: MutableState<ShowkaseBrowserScreenMetadata>
+    showkaseBrowserScreenMetadata: MutableState<ShowkaseBrowserScreenMetadata>,
+    navController: NavHostController
 ) {
     val isSearchActive = showkaseBrowserScreenMetadata.value.isSearchActive
     when {
         isSearchActive -> showkaseBrowserScreenMetadata.clearActiveSearch()
-        else -> showkaseBrowserScreenMetadata.update {
-            copy(
-                currentScreen = ShowkaseCurrentScreen.COMPONENT_GROUPS,
-                currentGroup = null,
-                currentComponent = null,
-                isSearchActive = false,
-                searchQuery = null
-            )
+        else -> {
+            showkaseBrowserScreenMetadata.clear()
+            navController.navigate(ShowkaseCurrentScreen.COMPONENT_GROUPS)
         }
     }
 }
-
 
 private fun getFilteredSearchList(
     list: List<ShowkaseBrowserComponent>,
@@ -69,8 +76,10 @@ private fun getFilteredSearchList(
         false -> list
         !showkaseBrowserScreenMetadata.value.searchQuery.isNullOrBlank() -> {
             list.filter {
-                it.componentName.toLowerCase()
-                    .contains(showkaseBrowserScreenMetadata.value.searchQuery!!.toLowerCase())
+                matchSearchQuery(
+                    showkaseBrowserScreenMetadata.value.searchQuery!!,
+                    it.componentName
+                )
             }
         }
         else -> list

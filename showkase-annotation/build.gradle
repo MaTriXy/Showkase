@@ -1,31 +1,19 @@
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    // Maven artifact publish
-    dependencies {
-        classpath 'com.vanniktech:gradle-maven-publish-plugin:0.11.1'
-    }
-}
-
 plugins {
     id 'java-library'
     id 'kotlin'
 }
-apply plugin: "com.vanniktech.maven.publish"
+apply from: "$rootDir/publishing.gradle"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 compileKotlin {
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
 }
 
 dependencies {
-    implementation deps.kotlinStdLib
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
 }

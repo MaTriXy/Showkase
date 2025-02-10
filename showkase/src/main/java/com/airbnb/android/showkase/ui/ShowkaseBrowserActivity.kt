@@ -3,14 +3,14 @@ package com.airbnb.android.showkase.ui
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.setContent
 import com.airbnb.android.showkase.exceptions.ShowkaseException
 import com.airbnb.android.showkase.models.ShowkaseBrowserScreenMetadata
 import com.airbnb.android.showkase.models.ShowkaseProvider
-import com.airbnb.android.showkase.models.ShowkaseProviderElements
+import com.airbnb.android.showkase.models.ShowkaseElementsMetadata
 
 /**
  * The activity that's responsible for showing all the UI elements that were annotated
@@ -25,16 +25,19 @@ class ShowkaseBrowserActivity : AppCompatActivity() {
         )
         setContent {
             val (
-                groupedComponentsMap,
-                groupedColorsMap,
-                groupedTypographyMap
+                groupedComponentsList,
+                groupedColorsList,
+                groupedTypographyList
             ) = getShowkaseProviderElements(classKey)
-            val showkaseBrowserScreenMetadata = 
+            val showkaseBrowserScreenMetadata =
                 remember { mutableStateOf(ShowkaseBrowserScreenMetadata()) }
             when {
-                groupedComponentsMap.isNotEmpty() || groupedColorsMap.isNotEmpty() || 
-                        groupedTypographyMap.isNotEmpty() -> {
-                    ShowkaseBrowserApp(groupedComponentsMap, groupedColorsMap, groupedTypographyMap,
+                groupedComponentsList.isNotEmpty() || groupedColorsList.isNotEmpty() ||
+                        groupedTypographyList.isNotEmpty() -> {
+                    ShowkaseBrowserApp(
+                        groupedComponentsList.groupBy { it.group },
+                        groupedColorsList.groupBy { it.colorGroup },
+                        groupedTypographyList.groupBy { it.typographyGroup },
                         showkaseBrowserScreenMetadata)
                 }
                 else -> {
@@ -51,33 +54,18 @@ class ShowkaseBrowserActivity : AppCompatActivity() {
 
     private fun getShowkaseProviderElements(
         classKey: String
-    ): ShowkaseProviderElements {
+    ): ShowkaseElementsMetadata {
         return try {
             val showkaseComponentProvider =
-                Class.forName("$classKey$AUTOGEN_CLASS_NAME").newInstance()
-
-            val componentsMap =
-                (showkaseComponentProvider as ShowkaseProvider)
-                    .getShowkaseComponents()
-                    .groupBy { it.group }
-            
-            val colorsMap = 
-                showkaseComponentProvider
-                    .getShowkaseColors()
-                    .groupBy { it.colorGroup }
-
-            val typographyMap =
-                showkaseComponentProvider
-                    .getShowkaseTypography()
-                    .groupBy { it.typographyGroup }
-
-            ShowkaseProviderElements(
-                components = componentsMap,
-                colors = colorsMap,
-                typographyMap = typographyMap
+                Class.forName("$classKey$AUTOGEN_CLASS_NAME").getDeclaredConstructor().newInstance()
+            val showkaseMetadata = (showkaseComponentProvider as ShowkaseProvider).metadata()
+            ShowkaseElementsMetadata(
+                componentList = showkaseMetadata.componentList,
+                colorList = showkaseMetadata.colorList,
+                typographyList = showkaseMetadata.typographyList
             )
         } catch (exception: ClassNotFoundException) {
-            ShowkaseProviderElements()
+            ShowkaseElementsMetadata()
         }
     }
 
@@ -90,9 +78,9 @@ class ShowkaseBrowserActivity : AppCompatActivity() {
          * Showkase browser activity. Please make sure to use this instead of starting the
          * activity directly as it sets the right value in the bundle in order for the activity
          * to start correctly.
-         * 
+         *
          * @param context Android context
-         * @param rootModuleCanonicalName The canonical name of the implementation of 
+         * @param rootModuleCanonicalName The canonical name of the implementation of
          * ShowkaseRootModule.
          */
         fun getIntent(context: Context, rootModuleCanonicalName: String) =
